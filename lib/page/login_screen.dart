@@ -3,6 +3,7 @@ import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import 'signup_screen.dart';
+import 'main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,6 +41,14 @@ class _LoginScreenState extends State<LoginScreen> {
       // Exemple : en cas d'échec, message volontairement non-spécifique
       // (norme sécurité : ne pas préciser si c'est l'email ou le mot de passe qui est faux)
       // setState(() => _errorMessage = 'Identifiant ou mot de passe incorrect');
+
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

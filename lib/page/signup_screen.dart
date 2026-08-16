@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import 'main_navigation.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -40,6 +41,14 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       // TODO: brancher l'appel API réel (POST /api/auth/register)
       await Future.delayed(const Duration(seconds: 1));
+
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
