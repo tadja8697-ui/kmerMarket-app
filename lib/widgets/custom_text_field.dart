@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Champ de saisie réutilisable.
-/// - Libellé cliquable (géré nativement par [InputDecoration.labelText])
-/// - Clavier adapté selon [keyboardType]
-/// - Validation en temps réel via [autovalidateMode]
-/// - Option afficher/masquer le mot de passe (icône œil)
+
 class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;

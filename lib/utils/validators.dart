@@ -1,5 +1,5 @@
 class Validators {
-  // --- EMAIL ---
+  
   static String? validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'L\'email est requis';
@@ -11,7 +11,7 @@ class Validators {
     return null;
   }
 
-  // --- NOM ---
+ 
   static String? validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Le nom est requis';
@@ -22,8 +22,7 @@ class Validators {
     return null;
   }
 
-  // --- TELEPHONE ---
-  // Adapté au format camerounais : 9 chiffres, commence souvent par 6
+  
   static String? validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Le numéro de téléphone est requis';
@@ -35,7 +34,7 @@ class Validators {
     return null;
   }
 
-  // --- MOT DE PASSE ---
+  
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Le mot de passe est requis';
@@ -52,7 +51,7 @@ class Validators {
     return null;
   }
 
-  // --- CONFIRMATION MOT DE PASSE ---
+ 
   static String? validateConfirmPassword(String? value, String password) {
     if (value == null || value.isEmpty) {
       return 'Veuillez confirmer le mot de passe';
@@ -63,7 +62,7 @@ class Validators {
     return null;
   }
 
-  // Utilisé pour afficher la checklist en temps réel (majuscule, chiffre, longueur)
+ 
   static Map<String, bool> passwordCriteria(String value) {
     return {
       'Au moins 8 caractères': value.length >= 8,

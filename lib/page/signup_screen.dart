@@ -39,10 +39,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // TODO: brancher l'appel API réel (POST /api/auth/register)
+      // a faire
       await Future.delayed(const Duration(seconds: 1));
 
-      
+      // Inscription simulée réussie -> on va vers la navigation principale
       if (mounted) {
         Navigator.pushReplacement(
           context,

@@ -1,73 +1,135 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
+import 'product_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final List<Product> products;
+  final Set<int> favoriteIds;
+  final void Function(Product) onFavoriteToggle;
 
-  // Données en dur en attendant la connexion à la BDD (comme demandé)
-  static final List<Product> _hardcodedProducts = [
-    Product(
-      id: 1,
-      name_p: 'Machine à coudre',
-      desc: 'Machine à coudre en bon état, peu utilisée',
-      price: 45000,
-      image: 'https://images.unsplash.com/photo-1590959651373-a3db0f38a961?w=400',
-      userid: '1',
-    ),
-    Product(
-      id: 2,
-      name_p: 'Vélo enfant',
-      desc: 'Vélo pour enfant 6-9 ans',
-      price: 15000,
-      image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=400',
-      userid: '2',
-    ),
-    Product(
-      id: 3,
-      name_p: 'Table basse',
-      desc: 'Table basse en bois massif',
-      price: 20000,
-      image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400',
-      userid: '1',
-    ),
-    Product(
-      id: 4,
-      name_p: 'Perceuse',
-      desc: 'Perceuse électrique avec accessoires',
-      price: 12000,
-      image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
-      userid: '3',
-    ),
-  ];
+  const HomeScreen({
+    super.key,
+    required this.products,
+    required this.favoriteIds,
+    required this.onFavoriteToggle,
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _selectedCategory = 'Tout';
+
+  // Catégories en dur pour l'instant (viendront du produit plus tard)
+  final List<String> _categories = ['Tout', 'Maison', 'Outils', 'Transport', 'Autre'];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Product> get _filteredProducts {
+    return widget.products.where((p) {
+      final matchesSearch = p.name_p.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategory = _selectedCategory == 'Tout' || p.category == _selectedCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final products = _filteredProducts;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('KmerMarket'),
-        centerTitle: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: GridView.builder(
-          itemCount: _hardcodedProducts.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.72,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: InputDecoration(
+                hintText: 'Rechercher un produit...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+              ),
+            ),
           ),
-          itemBuilder: (context, index) {
-            final product = _hardcodedProducts[index];
-            return ProductCard(
-              product: product,
-              onTap: () {
-                // TODO: navigation vers le détail du produit
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _categories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                final isSelected = category == _selectedCategory;
+                return ChoiceChip(
+                  label: Text(category),
+                  selected: isSelected,
+                  onSelected: (_) => setState(() => _selectedCategory = category),
+                );
               },
-            );
-          },
-        ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: products.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        const Text('Aucun produit trouvé', style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    itemCount: products.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return ProductCard(
+                        product: product,
+                        isFavorite: widget.favoriteIds.contains(product.id),
+                        onFavoriteToggle: () => widget.onFavoriteToggle(product),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(product: product),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

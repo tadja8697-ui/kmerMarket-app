@@ -4,6 +4,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import 'signup_screen.dart';
 import 'main_navigation.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // (norme sécurité : ne pas préciser si c'est l'email ou le mot de passe qui est faux)
       // setState(() => _errorMessage = 'Identifiant ou mot de passe incorrect');
 
-      
+      // Connexion simulée réussie -> on va vers la navigation principale
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -143,7 +144,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        // TODO: navigation vers l'écran "mot de passe oublié"
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        );
                       },
                       child: const Text('Mot de passe oublié ?'),
                     ),
