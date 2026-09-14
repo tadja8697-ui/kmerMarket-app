@@ -71,7 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 45,
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                       child: Text(
                         _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
                         style: TextStyle(fontSize: 32, color: Theme.of(context).colorScheme.primary),

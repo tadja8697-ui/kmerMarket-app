@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 
@@ -15,6 +17,45 @@ class ProductCard extends StatelessWidget {
     this.onFavoriteToggle,
   });
 
+  Widget _buildProductImage() {
+    final image = product.image.trim();
+    if (image.isEmpty) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 32),
+      );
+    }
+    if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('blob:')) {
+      return Image.network(
+        image,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 32),
+        ),
+      );
+    }
+    if (!kIsWeb) {
+      try {
+        final file = File(image);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 32),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 32),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -26,7 +67,7 @@ class ProductCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -42,15 +83,7 @@ class ProductCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: double.infinity,
-                    child: Image.network(
-                      product.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.image_not_supported_outlined,
-                            color: Colors.grey, size: 32),
-                      ),
-                    ),
+                    child: _buildProductImage(),
                   ),
                   if (onFavoriteToggle != null)
                     Positioned(

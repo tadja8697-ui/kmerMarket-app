@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../service/api_services.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
-import 'main_navigation.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -39,14 +39,38 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // a faire
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await ApiService.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+      );
 
-      // Inscription simulée réussie -> on va vers la navigation principale
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']?.toString() ?? 'Inscription réussie ! Veuillez vous connecter.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']?.toString() ?? 'Échec de l\'inscription'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -116,7 +140,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
 
-                  // Checklist en temps réel des critères du mot de passe (norme du guide)
+                  // Checklist en temps réel des critères du mot de passe
                   if (_showPasswordCriteria)
                     Padding(
                       padding: const EdgeInsets.only(left: 8, bottom: 8),

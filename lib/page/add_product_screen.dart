@@ -1,12 +1,13 @@
-import 'dart:io';
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/product.dart';
 
 class AddProductScreen extends StatefulWidget {
   final String currentUserId;
-  final void Function(Product) onSave;
-  final Product? productToEdit; // si non-null, la page passe en mode édition
+  final FutureOr<void> Function(Product) onSave;
+  final Product? productToEdit;
 
   const AddProductScreen({
     super.key,
@@ -27,8 +28,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late final TextEditingController _descController;
   late final TextEditingController _priceController;
 
-  File? _newlyPickedImage;
-  String? _existingImageUrl; 
+  XFile? _newlyPickedImage;       // garde la référence (path utile hors web)
+  Uint8List? _newlyPickedImageBytes; // utilisé pour la preview, marche partout
+  String? _existingImageUrl;
   bool _isLoading = false;
   late String _selectedCategory;
   final List<String> _categories = ['Maison', 'Outils', 'Transport', 'Autre'];
@@ -61,8 +63,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       imageQuality: 80,
     );
     if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
       setState(() {
-        _newlyPickedImage = File(pickedFile.path);
+        _newlyPickedImage = pickedFile;
+        _newlyPickedImageBytes = bytes;
         _existingImageUrl = null;
       });
     }
@@ -132,12 +136,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // a faire
-      //a faire
-      await Future.delayed(const Duration(seconds: 1));
-
       final product = Product(
-        id: widget.productToEdit?.id ?? DateTime.now().millisecondsSinceEpoch,
+        id: widget.productToEdit?.id ?? 0,
         name_p: _nameController.text.trim(),
         desc: _descController.text.trim(),
         price: double.parse(_priceController.text.trim()),
@@ -146,17 +146,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
         category: _selectedCategory,
       );
 
-      widget.onSave(product);
+      await widget.onSave(product);
 
       if (mounted) {
         if (widget.isEditing) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Annonce mise à jour')),
+            const SnackBar(
+              content: Text('Annonce mise à jour avec succès'),
+              backgroundColor: Colors.green,
+            ),
           );
           Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Produit publié !')),
+            const SnackBar(
+              content: Text('Produit publié avec succès !'),
+              backgroundColor: Colors.green,
+            ),
           );
           _formKey.currentState!.reset();
           _nameController.clear();
@@ -164,10 +170,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
           _priceController.clear();
           setState(() {
             _newlyPickedImage = null;
+            _newlyPickedImageBytes = null;
             _existingImageUrl = null;
             _selectedCategory = 'Maison';
           });
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'enregistrement: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -176,7 +192,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = _newlyPickedImage != null || _existingImageUrl != null;
+    final hasImage = _newlyPickedImageBytes != null || _existingImageUrl != null;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.isEditing ? 'Modifier le produit' : 'Ajouter un produit')),
@@ -187,7 +203,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- Sélecteur d'image ---
               GestureDetector(
                 onTap: _showImageSourceSheet,
                 child: Container(
@@ -200,47 +215,48 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   clipBehavior: Clip.antiAlias,
                   child: hasImage
                       ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            _newlyPickedImage != null
-                                ? Image.file(_newlyPickedImage!, fit: BoxFit.cover)
-                                : Image.network(
-                                    _existingImageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey),
-                                    ),
-                                  ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.black54,
-                                radius: 16,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  icon: const Icon(Icons.close, size: 18, color: Colors.white),
-                                  onPressed: () => setState(() {
-                                    _newlyPickedImage = null;
-                                    _existingImageUrl = null;
-                                  }),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_a_photo_outlined, size: 36, color: Colors.grey.shade500),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Ajouter une photo du produit',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ],
+                    fit: StackFit.expand,
+                    children: [
+                      _newlyPickedImageBytes != null
+                          ? Image.memory(_newlyPickedImageBytes!, fit: BoxFit.cover)
+                          : Image.network(
+                        _existingImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey),
                         ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          radius: 16,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.close, size: 18, color: Colors.white),
+                            onPressed: () => setState(() {
+                              _newlyPickedImage = null;
+                              _newlyPickedImageBytes = null;
+                              _existingImageUrl = null;
+                            }),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_a_photo_outlined, size: 36, color: Colors.grey.shade500),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ajouter une photo du produit',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -300,10 +316,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 onPressed: _isLoading ? null : _handleSubmit,
                 icon: _isLoading
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
                     : const Icon(Icons.check),
                 label: Text(_isLoading
                     ? 'Enregistrement...'

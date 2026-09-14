@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/users.dart';
 import '../models/product.dart';
@@ -10,8 +11,9 @@ class ProfileScreen extends StatelessWidget {
   final Users user;
   final List<Product> products;
   final Set<int> favoriteIds;
-  final void Function(Product) onProductUpdated;
-  final void Function(Product) onProductDeleted;
+  final FutureOr<void> Function(Product) onProductUpdated;
+  final FutureOr<void> Function(Product) onProductDeleted;
+  final Future<void> Function()? onRefreshProducts;
 
   const ProfileScreen({
     super.key,
@@ -20,26 +22,27 @@ class ProfileScreen extends StatelessWidget {
     required this.favoriteIds,
     required this.onProductUpdated,
     required this.onProductDeleted,
+    this.onRefreshProducts,
   });
 
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Se déconnecter ?'),
         content: const Text('Vous devrez vous reconnecter pour accéder à votre compte.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler'),
           ),
           TextButton(
             onPressed: () {
-              // a faire
+              Navigator.pop(ctx);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false, // vide tout l'historique de navigation
+                (route) => false,
               );
             },
             child: const Text('Se déconnecter', style: TextStyle(color: Colors.red)),
@@ -61,7 +64,7 @@ class ProfileScreen extends StatelessWidget {
           Center(
             child: CircleAvatar(
               radius: 45,
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
               child: Text(
                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                 style: TextStyle(
@@ -92,7 +95,11 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           _ProfileInfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email),
-          _ProfileInfoTile(icon: Icons.phone_outlined, label: 'Téléphone', value: user.phone),
+          _ProfileInfoTile(
+            icon: Icons.phone_outlined,
+            label: 'Téléphone',
+            value: user.phone.isNotEmpty ? user.phone : 'Non renseigné',
+          ),
           const SizedBox(height: 16),
 
           Card(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/users.dart';
+import '../service/api_services.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -36,19 +38,39 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: brancher l'appel API réel (POST /api/auth/login)
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await ApiService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-      // Exemple : en cas d'échec, message volontairement non-spécifique
-      // (norme sécurité : ne pas préciser si c'est l'email ou le mot de passe qui est faux)
-      // setState(() => _errorMessage = 'Identifiant ou mot de passe incorrect');
+      if (result['success'] == true) {
+        final Users user = (result['user'] as Users?) ??
+            Users(
+              id: 1,
+              name: _emailController.text.split('@').first,
+              email: _emailController.text.trim(),
+              phone: '',
+              password: '',
+            );
 
-      // Connexion simulée réussie -> on va vers la navigation principale
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MainNavigation(currentUser: user),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = result['message']?.toString() ?? 'Email ou mot de passe incorrect';
+          });
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
+        setState(() => _errorMessage = 'Erreur lors de la connexion: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -81,11 +103,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Signal de confiance (norme sécurité/confiance du guide)
+                  // Signal de confiance
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.08),
+                      color: Colors.green.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -107,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.08),
+                        color: Colors.red.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -118,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                   ],
 
-                  // Autofocus sur le premier champ (norme : mise au point automatique)
+                  // Autofocus sur le premier champ
                   CustomTextField(
                     controller: _emailController,
                     label: 'Email',
